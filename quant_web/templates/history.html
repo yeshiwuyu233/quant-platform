@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block page_title %}📈 历史趋势{% endblock %}
+
+{% block content %}
+{% if not records %}
+<div class="alert alert-warning">暂无历史数据。</div>
+{% else %}
+<!-- 图表区域 -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><strong>胜率趋势</strong></div>
+            <div class="card-body">
+                <div id="winRateChart" style="height:400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>全市场冷门 Alpha 趋势</strong></div>
+            <div class="card-body">
+                <div id="alphaChart" style="height:350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>下一日预测达标数趋势</strong></div>
+            <div class="card-body">
+                <div id="nextDayChart" style="height:350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 历史数据表格（日期可点击） -->
+<div class="card">
+    <div class="card-header"><strong>历史数据明细（点击日期查看回测详情）</strong></div>
+    <div class="card-body p-0">
+        <div class="table-responsive" style="max-height:500px">
+            <table class="table table-dark table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>指标>0.8 胜率</th>
+                        <th>指标>1.2 胜率</th>
+                        <th>全样本胜率</th>
+                        <th>成功/总数</th>
+                        <th>冷门 Alpha</th>
+                        <th>下一日达标数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr class="clickable-row" data-href="/backtest/{{ r.date_raw }}">
+                        <td><a href="/backtest/{{ r.date_raw }}" class="date-link">{{ r.date }}</a></td>
+                        <td>{{ r.acc_08 }}%</td>
+                        <td>{{ r.acc_12 }}%</td>
+                        <td>{{ r.all_pct }}%</td>
+                        <td>{{ r.all_success }}/{{ r.all_total }}</td>
+                        <td>{% if r.cold_alpha is not none %}{{ r.cold_alpha }}%{% else %}-{% endif %}</td>
+                        <td>{{ r.next_10 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const records = {{ records|tojson|safe }};
+renderWinRateTrend('winRateChart', records);
+renderAlphaTrend('alphaChart', records);
+renderNextDayTrend('nextDayChart', records);
+</script>
+{% endblock %}
