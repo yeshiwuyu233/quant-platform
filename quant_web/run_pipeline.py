@@ -70,7 +70,7 @@ def send_notification(success: bool, summary: str):
     """流水线结束后发送邮件通知"""
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.qq.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "465"))
 
     if not smtp_user or not smtp_pass:

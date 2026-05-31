@@ -58,7 +58,7 @@ _INVITE_CODE = os.environ.get("INVITE_CODE", "CHANGE_ME")
 # ── 用户数据库（SQLite） ──
 _DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.db")
 
-# 初始管理员账户从环境变量读取（不可硬编码）
+# 管理员/用户初始密码（从环境变量读取，部署时设置）
 _ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 _USER_PASSWORD = os.environ.get("USER_PASSWORD", "")
 
@@ -103,7 +103,7 @@ def _db_init():
     )""")
     conn.commit()
 
-    # 创建初始管理员（密码从环境变量读取，不存在则使用默认值）
+    # 创建初始用户（密码从环境变量读取，已存在则跳过）
     defaults = [
         ("admin", _ADMIN_PASSWORD, "admin", "超级管理员"),
         ("user", _USER_PASSWORD, "user", "普通用户"),

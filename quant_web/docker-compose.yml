@@ -16,9 +16,10 @@ services:
       - CRAWLER_USER=${CRAWLER_USER:-}
       - CRAWLER_PASS=${CRAWLER_PASS:-}
       - CRAWLER_PROXY=${CRAWLER_PROXY:-}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
-      - INVITE_CODE=${INVITE_CODE:-CHANGE_ME}
+      - INVITE_CODE=${INVITE_CODE:-}
       - NOTIFY_EMAIL=${NOTIFY_EMAIL:-}
     volumes:
       # 挂载项目根目录，使 Flask 能实时读取 xlsx/json 文件

@@ -12,6 +12,7 @@
 *.pre_fix
 *.corrupted*
 *.auto_repair*
+backups/
 
 # ── 配置/密钥（不上传） ──
 .env
@@ -39,6 +40,7 @@ Thumbs.db
 
 # ── 日志 ──
 *.log
+login_log.json
 
 # ── Claude ──
 .claude/

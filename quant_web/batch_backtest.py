@@ -310,8 +310,8 @@ def run_single_backtest(date_str):
         log.error(f"Backtest failed for {curr}: {e}")
         return False
 
-    fn = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.xlsx')
-    with pd.ExcelWriter(fn, engine='openpyxl') as writer:
+    fn_tmp = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.xlsx')
+    with pd.ExcelWriter(fn_tmp, engine='openpyxl') as writer:
         result['tracking'].to_excel(writer, sheet_name='0.每日追踪总表')
         result['backtest'].to_excel(writer, sheet_name='1.回测明细(跨日合并)', index=False)
         result['win_rates'].to_excel(writer, sheet_name='2.三阶胜率全景对比', index=False)
@@ -321,6 +321,7 @@ def run_single_backtest(date_str):
         result['today_dist'].to_excel(writer, sheet_name='5.当日最新策略分布', index=False)
         if not result['today_industry'].empty:
             result['today_industry'].to_excel(writer, sheet_name='6.当日最新行业热度', index=False)
+    os.replace(fn_tmp, fn)
     log.info(f"[OK] {curr}量化复盘报告.xlsx")
 
     json_path = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.json')
@@ -366,8 +367,8 @@ def main():
         except Exception as e:
             log.error(f"❌ {e}")
             continue
-        fn = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.xlsx')
-        with pd.ExcelWriter(fn, engine='openpyxl') as writer:
+        fn_tmp = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.xlsx')
+        with pd.ExcelWriter(fn_tmp, engine='openpyxl') as writer:
             result['tracking'].to_excel(writer, sheet_name='0.每日追踪总表')
             result['backtest'].to_excel(writer, sheet_name='1.回测明细(跨日合并)', index=False)
             result['win_rates'].to_excel(writer, sheet_name='2.三阶胜率全景对比', index=False)
@@ -377,6 +378,7 @@ def main():
             result['today_dist'].to_excel(writer, sheet_name='5.当日最新策略分布', index=False)
             if not result['today_industry'].empty:
                 result['today_industry'].to_excel(writer, sheet_name='6.当日最新行业热度', index=False)
+        os.replace(fn_tmp, fn)
         log.info(f"  [OK] {curr}量化复盘报告.xlsx")
         # ── 同时写 JSON ──
         json_path = os.path.join(PROJECT_ROOT, f'{curr}量化复盘报告.json')
