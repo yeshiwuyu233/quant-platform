@@ -22,6 +22,7 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PIPELINE_STATUS_PATH = os.path.join(_PROJECT_ROOT, "pipeline_status.json")
 
 import data_service as ds
+import db_service as dbs
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "quant-web-secret-change-in-production")
@@ -1312,6 +1313,12 @@ def api_latest():
 @login_required
 def api_dates():
     return jsonify(ds.get_available_dates())
+
+
+@app.route("/api/cache/status")
+@login_required
+def api_cache_status():
+    return jsonify(dbs.get_cache_status())
 
 
 @app.route("/debug")

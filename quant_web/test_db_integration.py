@@ -271,6 +271,64 @@ class TestDailyTrackingCRUD(unittest.TestCase):
         self.assertEqual(r, 0, "重复 trade_date 应违反 UNIQUE")
 
 
+class TestCacheStatus(unittest.TestCase):
+    """market.db cache status summary tests."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mktemp(suffix='.db')
+        _set_test_db(cls.tmp)
+        from quant_web.db_service import init_db
+        init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        for f in [cls.tmp, cls.tmp + '-wal', cls.tmp + '-shm']:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    def setUp(self):
+        from quant_web.db_service import get_db
+        conn = get_db()
+        conn.execute("DELETE FROM market_snapshot")
+        conn.execute("DELETE FROM import_meta")
+        conn.commit()
+        conn.close()
+
+    def test_cache_status_summarizes_import_meta_and_rows(self):
+        from quant_web.db_service import execute, get_cache_status
+        execute(
+            "INSERT INTO import_meta (trade_date, rows_count, imported_at) VALUES (?, ?, ?)",
+            ('0511', 2, '2026-05-11 09:30:00')
+        )
+        execute(
+            "INSERT INTO import_meta (trade_date, rows_count, imported_at) VALUES (?, ?, ?)",
+            ('0512', 3, '2026-05-12 09:30:00')
+        )
+        for code in ('A', 'B'):
+            execute(
+                "INSERT INTO market_snapshot (trade_date, code, name) VALUES (?, ?, ?)",
+                ('0511', code, code)
+            )
+        for code in ('C', 'D', 'E'):
+            execute(
+                "INSERT INTO market_snapshot (trade_date, code, name) VALUES (?, ?, ?)",
+                ('0512', code, code)
+            )
+
+        status = get_cache_status()
+
+        self.assertTrue(status['db_exists'])
+        self.assertEqual(status['total_sheets'], 2)
+        self.assertEqual(status['total_rows'], 5)
+        self.assertEqual(status['latest_trade_date'], '0512')
+        self.assertEqual(status['latest_rows_count'], 3)
+        self.assertEqual(status['latest_actual_rows'], 3)
+        self.assertEqual(status['latest_imported_at'], '2026-05-12 09:30:00')
+
+
 class TestFetchHelpers(unittest.TestCase):
     """fetchone/fetchall 异常安全性测试"""
 

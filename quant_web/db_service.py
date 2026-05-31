@@ -148,6 +148,66 @@ def count_market_rows(trade_date: str) -> Optional[int]:
     return int(row["rows_count"]) if row else None
 
 
+def get_cache_status() -> dict:
+    status = {
+        "db_path": DB_PATH,
+        "db_exists": os.path.exists(DB_PATH),
+        "total_sheets": 0,
+        "total_rows": 0,
+        "latest_trade_date": None,
+        "latest_rows_count": 0,
+        "latest_actual_rows": 0,
+        "latest_imported_at": None,
+        "oldest_trade_date": None,
+        "last_imported_at": None,
+    }
+    if not status["db_exists"]:
+        return status
+
+    conn = None
+    try:
+        conn = get_db()
+        init_db(conn)
+        summary = conn.execute(
+            """
+            SELECT COUNT(*) AS total_sheets,
+                   COALESCE(SUM(rows_count), 0) AS total_rows,
+                   MIN(trade_date) AS oldest_trade_date,
+                   MAX(trade_date) AS latest_trade_date,
+                   MAX(imported_at) AS last_imported_at
+            FROM import_meta
+            """
+        ).fetchone()
+        if summary:
+            status.update({
+                "total_sheets": int(summary["total_sheets"] or 0),
+                "total_rows": int(summary["total_rows"] or 0),
+                "oldest_trade_date": summary["oldest_trade_date"],
+                "latest_trade_date": summary["latest_trade_date"],
+                "last_imported_at": summary["last_imported_at"],
+            })
+
+        latest = status["latest_trade_date"]
+        if latest:
+            meta = conn.execute(
+                "SELECT rows_count, imported_at FROM import_meta WHERE trade_date = ?",
+                (latest,),
+            ).fetchone()
+            actual = conn.execute(
+                "SELECT COUNT(*) AS actual_rows FROM market_snapshot WHERE trade_date = ?",
+                (latest,),
+            ).fetchone()
+            status["latest_rows_count"] = int(meta["rows_count"] or 0) if meta else 0
+            status["latest_imported_at"] = meta["imported_at"] if meta else None
+            status["latest_actual_rows"] = int(actual["actual_rows"] or 0) if actual else 0
+    except Exception as exc:
+        status["error"] = str(exc)
+    finally:
+        if conn is not None:
+            conn.close()
+    return status
+
+
 def get_industries(trade_date: str) -> list[str]:
     rows = fetchall(
         """
