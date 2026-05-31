@@ -574,7 +574,7 @@ def generate_weekly_report(sheet_name, all_dates, current_idx):
 
     # ── 写 Excel ──
     output_fn = os.path.join(PROJECT_ROOT, f"{sheet_name}的选股策略礼拜攻势.xlsx")
-    output_fn_tmp = output_fn + '.tmp'
+    output_fn_tmp = os.path.join(PROJECT_ROOT, f".{sheet_name}的选股策略礼拜攻势.tmp.xlsx")
     with pd.ExcelWriter(output_fn_tmp, engine="openpyxl") as writer:
         _write_excel_sheets(writer, std_pools, std_summary)
         _write_excel_sheets(writer, cold_pools, cold_summary, suffix="_冷门")
