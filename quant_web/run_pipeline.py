@@ -66,6 +66,26 @@ def run_weekly():
     subprocess.run([sys.executable, script], check=True, cwd=PROJECT_ROOT, env=env)
 
 
+def refresh_market_cache(sheet_name: str | None = None) -> bool:
+    """Best-effort refresh of the SQLite market cache after Whole Market changes."""
+    script = os.path.join(PROJECT_ROOT, "quant_web", "import_market_xlsx.py")
+    workbook = os.path.join(PROJECT_ROOT, "Whole Market.xlsx")
+    cmd = [sys.executable, script, "--xlsx", workbook]
+    if sheet_name:
+        cmd.extend(["--sheet", sheet_name])
+    else:
+        cmd.extend(["--limit-sheets", "1"])
+    env = os.environ.copy()
+    env['PYTHONPATH'] = os.path.join(PROJECT_ROOT, 'quant_web')
+    try:
+        subprocess.run(cmd, check=True, cwd=PROJECT_ROOT, env=env, timeout=180)
+        log.info(">>> SQLite market cache refreshed%s", f" for {sheet_name}" if sheet_name else "")
+        return True
+    except Exception as e:
+        log.warning("[!] SQLite market cache refresh failed: %s", e)
+        return False
+
+
 def send_notification(success: bool, summary: str):
     """流水线结束后发送邮件通知"""
     smtp_user = os.environ.get("SMTP_USER", "")
@@ -155,6 +175,8 @@ def main():
     success = True
     try:
         crawl_today()
+        today_sheet = datetime.datetime.now().strftime("%m%d")
+        refresh_market_cache(today_sheet)
     except Exception as e:
         log.error(f"爬取失败: {e}")
         success = False

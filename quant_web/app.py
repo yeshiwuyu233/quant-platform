@@ -388,6 +388,28 @@ def _write_sheet_to_master(master_path, df, sheet_name):
             raise
 
 
+def _refresh_market_cache(sheet_name=None):
+    """Best-effort refresh of market.db after Whole Market.xlsx changes."""
+    import subprocess
+    import sys
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "import_market_xlsx.py")
+    workbook = os.path.join(_PROJECT_ROOT, "Whole Market.xlsx")
+    cmd = [sys.executable, script, "--xlsx", workbook]
+    if sheet_name:
+        cmd.extend(["--sheet", sheet_name])
+    else:
+        cmd.extend(["--limit-sheets", "1"])
+    env = os.environ.copy()
+    env['PYTHONPATH'] = os.path.dirname(os.path.abspath(__file__))
+    try:
+        subprocess.run(cmd, check=True, cwd=_PROJECT_ROOT, env=env, timeout=180)
+        print(f"[pipeline] SQLite market cache refreshed: {sheet_name or 'latest'}")
+        return True
+    except Exception as e:
+        print(f"[pipeline] SQLite market cache refresh failed: {e}")
+        return False
+
+
 def _openpyxl_append_sheet(path, df, sheet_name):
     """Append/replace a sheet using openpyxl with atomic write (safe on crash)."""
     from openpyxl import load_workbook
@@ -611,6 +633,9 @@ def _run_pipeline_for_date(date_yyyymmdd, temp_csv=None):
             df = pd.read_csv(temp_csv)
             master_path = os.path.join(_PROJECT_ROOT, "Whole Market.xlsx")
             _write_sheet_to_master(master_path, df, date_mmdd)
+            status["stage"] = "refresh_market_cache"
+            _write_pipeline_status(status)
+            _refresh_market_cache(date_mmdd)
         except Exception as e:
             print(f"[pipeline] 写入 Master 失败: {e}")
         finally:

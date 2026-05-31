@@ -79,12 +79,19 @@ def import_sheet(conn, xlsx_path: str, sheet_name: str) -> int:
     return len(rows)
 
 
-def import_workbook(xlsx_path: str, limit_sheets: int | None = None, validate_only: bool = False) -> list[tuple[str, int]]:
+def import_workbook(xlsx_path: str, limit_sheets: int | None = None, validate_only: bool = False, sheet_names: list[str] | None = None) -> list[tuple[str, int]]:
     xls = pd.ExcelFile(xlsx_path)
-    sheets = [s for s in xls.sheet_names if s.isdigit() and len(s) == 4]
-    sheets = sorted(sheets)
-    if limit_sheets:
-        sheets = sheets[-limit_sheets:]
+    available = [s for s in xls.sheet_names if s.isdigit() and len(s) == 4]
+    if sheet_names:
+        wanted = [str(s).zfill(4) for s in sheet_names]
+        missing = [s for s in wanted if s not in available]
+        if missing:
+            raise ValueError(f"sheet(s) not found in workbook: {missing}")
+        sheets = wanted
+    else:
+        sheets = sorted(available)
+        if limit_sheets:
+            sheets = sheets[-limit_sheets:]
 
     if validate_only:
         return [(s, len(pd.read_excel(xlsx_path, sheet_name=s, usecols=["代码"]))) for s in sheets]
@@ -106,6 +113,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Import Whole Market.xlsx into market.db")
     parser.add_argument("--xlsx", default=DEFAULT_XLSX)
     parser.add_argument("--limit-sheets", type=int, default=None)
+    parser.add_argument("--sheet", action="append", dest="sheets", help="Import a specific MMDD sheet; may be repeated")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
 
@@ -113,7 +121,7 @@ def main() -> int:
         print(f"missing workbook: {args.xlsx}", file=sys.stderr)
         return 1
 
-    results = import_workbook(args.xlsx, args.limit_sheets, args.validate_only)
+    results = import_workbook(args.xlsx, args.limit_sheets, args.validate_only, args.sheets)
     for sheet, count in results:
         print(f"{sheet}: {count}")
     print(f"sheets: {len(results)}")
