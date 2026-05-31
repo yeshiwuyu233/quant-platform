@@ -697,7 +697,7 @@ def _send_pipeline_notification(success, body):
         msg = MIMEText(body, "plain", "utf-8")
         msg["Subject"] = f"量化流水线 {date_str} {status_label}"
         msg["From"] = _SMTP_USER
-        notify_to = os.environ.get("NOTIFY_EMAIL", _SMTP_USER)
+        notify_to = os.environ.get("NOTIFY_EMAIL") or _SMTP_USER
         msg["To"] = notify_to
         with smtplib.SMTP_SSL(_SMTP_HOST, _SMTP_PORT, timeout=10) as s:
             s.login(_SMTP_USER, _SMTP_PASS)
