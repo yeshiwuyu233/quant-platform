@@ -8,6 +8,7 @@ import sys
 import tempfile
 import sqlite3
 import unittest
+from unittest import mock
 
 # ── 测试用 DB 路径覆盖 ──
 _test_db_path = None  # 由 setUpModule 设置
@@ -359,6 +360,45 @@ class TestFetchHelpers(unittest.TestCase):
         from quant_web.db_service import execute
         result = execute("INSERT INTO non_existent VALUES (1)")
         self.assertEqual(result, 0)
+
+    def test_execute_closes_connection_on_error(self):
+        import quant_web.db_service as dbs
+
+        class BrokenConnection:
+            closed = False
+
+            def execute(self, *args, **kwargs):
+                raise sqlite3.OperationalError("boom")
+
+            def close(self):
+                self.closed = True
+
+        conn = BrokenConnection()
+        with mock.patch.object(dbs, "get_db", return_value=conn):
+            self.assertEqual(dbs.execute("SELECT broken"), 0)
+        self.assertTrue(conn.closed)
+
+    def test_fetch_helpers_close_connection_on_error(self):
+        import quant_web.db_service as dbs
+
+        class BrokenConnection:
+            closed = False
+
+            def execute(self, *args, **kwargs):
+                raise sqlite3.OperationalError("boom")
+
+            def close(self):
+                self.closed = True
+
+        conn = BrokenConnection()
+        with mock.patch.object(dbs, "get_db", return_value=conn):
+            self.assertIsNone(dbs.fetchone("SELECT broken"))
+        self.assertTrue(conn.closed)
+
+        conn = BrokenConnection()
+        with mock.patch.object(dbs, "get_db", return_value=conn):
+            self.assertEqual(dbs.fetchall("SELECT broken"), [])
+        self.assertTrue(conn.closed)
 
 
 if __name__ == '__main__':

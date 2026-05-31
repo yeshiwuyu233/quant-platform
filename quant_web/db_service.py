@@ -73,47 +73,59 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
 
 
 def fetchone(sql: str, params: tuple = ()) -> Optional[dict]:
+    conn = None
     try:
         conn = get_db()
         row = conn.execute(sql, params).fetchone()
-        conn.close()
         return dict(row) if row else None
     except Exception:
         return None
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def fetchall(sql: str, params: tuple = ()) -> list[dict]:
+    conn = None
     try:
         conn = get_db()
         rows = conn.execute(sql, params).fetchall()
-        conn.close()
         return [dict(r) for r in rows]
     except Exception:
         return []
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def execute(sql: str, params: tuple = ()) -> int:
+    conn = None
     try:
         conn = get_db()
         conn.execute(sql, params)
         conn.commit()
         affected = conn.total_changes
-        conn.close()
         return affected
     except Exception:
         return 0
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def executemany(sql: str, seq: Iterable[tuple]) -> int:
+    conn = None
     try:
         conn = get_db()
         conn.executemany(sql, list(seq))
         conn.commit()
         affected = conn.total_changes
-        conn.close()
         return affected
     except Exception:
         return 0
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def get_market_dates() -> list[str]:

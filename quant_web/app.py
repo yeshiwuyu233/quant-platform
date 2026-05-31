@@ -688,8 +688,8 @@ def _run_pipeline_for_date(date_yyyymmdd, temp_csv=None):
 def _send_pipeline_notification(success, body):
     """Send pipeline completion email, or log if SMTP unavailable."""
     import logging
-    if not _SMTP_USER or not _SMTP_PASS:
-        logging.getLogger(__name__).info("SMTP未配置，跳过流水线通知")
+    if not (_SMTP_USER and _SMTP_PASS and _SMTP_HOST):
+        logging.getLogger(__name__).info("SMTP配置不完整，跳过流水线通知")
         return
     try:
         date_str = datetime.now().strftime("%m/%d")
