@@ -11,6 +11,14 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
+try:
+    from . import db_service as market_db
+except Exception:
+    try:
+        import db_service as market_db
+    except Exception:
+        market_db = None
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -208,11 +216,60 @@ def _read_tracking_from_path(path):
     return _read_tracking_from_xlsx(path)
 
 
+# -- SQLite market cache helpers (phase 1: read-through cache) --
+
+def _db_available_dates() -> list[str]:
+    if not market_db:
+        return []
+    try:
+        return market_db.get_market_dates()
+    except Exception:
+        return []
+
+
+def _db_read_market_sheet(date: str):
+    if not market_db or not date:
+        return None
+    try:
+        df = market_db.read_market_sheet(date)
+    except Exception:
+        return None
+    if df is None or df.empty:
+        return None
+    if '准确率' in df.columns:
+        df['准确率'] = pd.to_numeric(df['准确率'], errors='coerce')
+    if '今日指标' in df.columns:
+        df['今日指标'] = pd.to_numeric(df['今日指标'], errors='coerce')
+    return df
+
+
+def _db_market_count(date: str) -> Optional[int]:
+    if not market_db or not date:
+        return None
+    try:
+        return market_db.count_market_rows(date)
+    except Exception:
+        return None
+
+
+def _db_industries(date: str) -> list[str]:
+    if not market_db or not date:
+        return []
+    try:
+        return market_db.get_industries(date)
+    except Exception:
+        return []
+
+
 # ── 公开 API ──
 
 @ttl_cache(60)
 def get_available_dates() -> list[str]:
-    """返回 Whole Market 中所有交易日日期列表 (已排序)。"""
+    """返回所有交易日日期列表；优先 SQLite，缺失时回退 Whole Market。"""
+    db_dates = _db_available_dates()
+    if db_dates:
+        return db_dates
+
     market_path = os.path.join(PROJECT_ROOT, "Whole Market.xlsx")
     try:
         xls = pd.ExcelFile(market_path)
@@ -506,6 +563,10 @@ def get_screener_count(date: Optional[str] = None) -> int:
         date = dates[-1] if dates else None
     if not date:
         return 0
+    db_count = _db_market_count(date)
+    if db_count is not None:
+        return db_count
+
     try:
         df = pd.read_excel(os.path.join(PROJECT_ROOT, "Whole Market.xlsx"),
                            sheet_name=date, usecols=['代码'])
@@ -539,6 +600,10 @@ def _read_market_sheet(date: str):
         date = dates[-1] if dates else None
     if not date:
         return None
+    db_df = _db_read_market_sheet(date)
+    if db_df is not None:
+        return db_df
+
     path = os.path.join(PROJECT_ROOT, "Whole Market.xlsx")
     try:
         df = pd.read_excel(path, sheet_name=date)
@@ -597,6 +662,10 @@ def get_all_industries() -> list[str]:
     dates = get_available_dates()
     if not dates:
         return []
+    db_inds = _db_industries(dates[-1])
+    if db_inds:
+        return db_inds
+
     path = os.path.join(PROJECT_ROOT, "Whole Market.xlsx")
     try:
         df = pd.read_excel(path, sheet_name=dates[-1], usecols=['行业'])

@@ -5,9 +5,11 @@
 *.json
 *.db
 *.sqlite
+market.db
 
 # ── 备份 ──
 *.bak
+*.bak.*
 *.cbak
 *.pre_fix
 *.corrupted*
