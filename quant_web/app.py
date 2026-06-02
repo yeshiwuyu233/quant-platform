@@ -25,7 +25,7 @@ import data_service as ds
 import db_service as dbs
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "quant-web-secret-change-in-production")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(32)
 app.url_map.strict_slashes = False
 app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",

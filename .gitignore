@@ -1,13 +1,16 @@
-# ── 数据文件（不上传） ──
+# Data files
 *.xlsx
 *.xls
 *.csv
 *.json
 *.db
 *.sqlite
+*.sqlite3
 market.db
+users.db
+pipeline_status.json
 
-# ── 备份 ──
+# Backups and generated repair files
 *.bak
 *.bak.*
 *.cbak
@@ -16,13 +19,18 @@ market.db
 *.auto_repair*
 backups/
 
-# ── 配置/密钥（不上传） ──
+# Local configuration and secrets
 .env
 .env.local
+.env.*.local
 *.key
 *.pem
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
 
-# ── Python ──
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -31,23 +39,26 @@ dist/
 build/
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
 
-# ── 操作系统 ──
+# Operating system
 .DS_Store
 Thumbs.db
 
-# ── IDE ──
+# IDE
 .vscode/
 .idea/
 
-# ── 日志 ──
+# Logs
 *.log
 login_log.json
 
-# ── Claude ──
+# Local AI assistant state
 .claude/
 .claude.json
 
-# ── 临时文件 ──
+# Temporary files
 *.tmp
 *.swp
+*.swo
